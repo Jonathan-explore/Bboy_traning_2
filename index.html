@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#050505">
+    <title>B-Boy Training Galaxy</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }</script>
+</head>
+<body>
+    <div id="lang-switcher" class="glass-lang-switcher">
+        <button class="lang-btn" data-lang="es" title="Español">ES</button>
+        <button class="lang-btn" data-lang="en" title="English">EN</button>
+        <button class="lang-btn" data-lang="da" title="Dansk">DK</button>
+    </div>
+    
+    <canvas id="bg-canvas"></canvas>
+    
+    <main id="main-menu" class="menu-container">
+        <header>
+            <h1>B-Boy Training Galaxy</h1>
+        </header>
+        <div class="cards-grid">
+            <div class="glass-card day-card" data-day="Lunes"><h3>Lunes</h3></div>
+            <div class="glass-card day-card" data-day="Martes"><h3>Martes</h3></div>
+            <div class="glass-card day-card" data-day="Miércoles"><h3>Miércoles</h3></div>
+            <div class="glass-card day-card" data-day="Jueves"><h3>Jueves</h3></div>
+            <div class="glass-card day-card" data-day="Viernes"><h3>Viernes</h3></div>
+            <div class="glass-card day-card" data-day="Sábado"><h3>Sábado</h3></div>
+            <div class="glass-card day-card" data-day="Domingo"><h3>Domingo</h3></div>
+        </div>
+    </main>
+
+    <section id="interior-view" class="interior-container hidden">
+        <button id="back-btn" class="glass-btn">Volver a los Días</button>
+        <div class="constellation-wrapper">
+            <canvas id="constellation-canvas"></canvas>
+            <div id="labels-container"></div>
+        </div>
+    </section>
+
+    <section id="phase-interior" class="phase-container hidden">
+        <button id="back-galaxy-btn" class="glass-btn">Regresar a la Galaxia</button>
+        <div class="phase-content">
+            <h2 id="phase-title" class="phase-title">Fase</h2>
+            <div class="floating-cards-wrapper" id="dynamic-cards-wrapper">
+                <!-- Cards injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
