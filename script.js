@@ -646,6 +646,13 @@ function initConstellation(plan) {
         labelEl.textContent = phaseLabel;
         labelEl.style.left = `${cx}px`;
         labelEl.style.top = `${cy - 100}px`;
+        
+        // Ensure labels are clickable in mobile layout
+        labelEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentView === 1) enterPhase(cluster);
+        });
+
         labelsContainer.appendChild(labelEl);
 
         return {
