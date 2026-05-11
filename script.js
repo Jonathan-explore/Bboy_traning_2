@@ -590,25 +590,48 @@ function exitPhase() {
 
 // --- Constellation Canvas Logic ---
 function initConstellation(plan) {
+    const isMobile = window.innerWidth <= 768;
+    const MOBILE_SPACING = 230; // px entre centros de constelación
+    const MOBILE_TOP     = 120; // px desde arriba para la primera
+
     cWidth = constCanvas.width = window.innerWidth;
-    cHeight = constCanvas.height = window.innerHeight;
-    
+
+    if (isMobile) {
+        // Canvas crece hacia abajo para caber todas las constelaciones
+        cHeight = constCanvas.height = MOBILE_TOP + plan.length * MOBILE_SPACING + 100;
+        // Ajustar el wrapper para que interior-container pueda hacer scroll
+        const wrapper = document.querySelector('.constellation-wrapper');
+        if (wrapper) wrapper.style.height = cHeight + 'px';
+    } else {
+        cHeight = constCanvas.height = window.innerHeight;
+        const wrapper = document.querySelector('.constellation-wrapper');
+        if (wrapper) wrapper.style.height = '';
+    }
+
     const labelsContainer = document.getElementById('labels-container');
     labelsContainer.innerHTML = '';
-    
+
     const n = plan.length;
-    const radius = Math.min(cWidth, cHeight) * 0.35;
     const centers = [];
-    
-    for (let i = 0; i < n; i++) {
-        let angle = -Math.PI / 2;
-        if (n > 1) {
-            angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+
+    if (isMobile) {
+        // Layout vertical: centrado horizontalmente, apilado verticalmente
+        for (let i = 0; i < n; i++) {
+            centers.push({
+                cx: cWidth / 2,
+                cy: MOBILE_TOP + i * MOBILE_SPACING
+            });
         }
-        centers.push({
-            cx: cWidth / 2 + Math.cos(angle) * radius,
-            cy: cHeight / 2 + Math.sin(angle) * radius
-        });
+    } else {
+        // Layout circular original de escritorio
+        const radius = Math.min(cWidth, cHeight) * 0.35;
+        for (let i = 0; i < n; i++) {
+            const angle = (n > 1) ? (Math.PI * 2 * i) / n - Math.PI / 2 : -Math.PI / 2;
+            centers.push({
+                cx: cWidth / 2 + Math.cos(angle) * radius,
+                cy: cHeight / 2 + Math.sin(angle) * radius
+            });
+        }
     }
 
     clusters = plan.map((phaseObj, i) => {
@@ -620,8 +643,8 @@ function initConstellation(plan) {
         const points = [];
         for (let j = 0; j < numPoints; j++) {
             points.push({
-                x: (Math.random() - 0.5) * 120,
-                y: (Math.random() - 0.5) * 120
+                x: (Math.random() - 0.5) * (isMobile ? 60 : 120),
+                y: (Math.random() - 0.5) * (isMobile ? 60 : 120)
             });
         }
         
@@ -644,10 +667,19 @@ function initConstellation(plan) {
         let labelEl = document.createElement('div');
         labelEl.className = 'pop-label';
         labelEl.textContent = phaseLabel;
-        labelEl.style.left = `${cx}px`;
-        labelEl.style.top = `${cy - 100}px`;
+
+        if (isMobile) {
+            // En móvil: posición absoluta alineada con el centro de la constelación
+            // El CSS se encarga del transform: translateX(-50%) para centrar
+            labelEl.style.left = '50%';
+            labelEl.style.top  = `${cy + 70}px`;
+            labelEl.classList.add('show'); // siempre visible, sin hover
+        } else {
+            labelEl.style.left = `${cx}px`;
+            labelEl.style.top  = `${cy - 100}px`;
+        }
         
-        // Ensure labels are clickable in mobile layout
+        // Clickable directo en móvil
         labelEl.addEventListener('click', (e) => {
             e.stopPropagation();
             if (currentView === 1) enterPhase(cluster);
@@ -665,23 +697,24 @@ function initConstellation(plan) {
 }
 
 function animateConstellation() {
+    const isMobile = window.innerWidth <= 768;
     cCtx.clearRect(0, 0, cWidth, cHeight);
     hoveredCluster = null;
     
     clusters.forEach(cluster => {
-        let dist = Math.hypot(mouseC.x - cluster.cx, mouseC.y - cluster.cy);
-        let isHovered = dist < 140;
-        
-        if (isHovered) {
-            hoveredCluster = cluster;
-        }
-        
-        if(isHovered && !cluster.hovered) {
-            cluster.hovered = true;
-            cluster.labelEl.classList.add('show');
-        } else if (!isHovered && cluster.hovered) {
-            cluster.hovered = false;
-            cluster.labelEl.classList.remove('show');
+        // En móvil: sin detección de hover (las etiquetas son siempre visibles)
+        let isHovered = false;
+        if (!isMobile) {
+            const dist = Math.hypot(mouseC.x - cluster.cx, mouseC.y - cluster.cy);
+            isHovered = dist < 140;
+            if (isHovered) hoveredCluster = cluster;
+            if (isHovered && !cluster.hovered) {
+                cluster.hovered = true;
+                cluster.labelEl.classList.add('show');
+            } else if (!isHovered && cluster.hovered) {
+                cluster.hovered = false;
+                cluster.labelEl.classList.remove('show');
+            }
         }
 
         cluster.connections.forEach(conn => {
@@ -690,7 +723,7 @@ function animateConstellation() {
             cCtx.beginPath();
             cCtx.moveTo(n1.x, n1.y);
             cCtx.lineTo(n2.x, n2.y);
-            cCtx.strokeStyle = isHovered ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.4)';
+            cCtx.strokeStyle = isHovered ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.5)';
             cCtx.lineWidth = isHovered ? 2.5 : 1;
             cCtx.shadowBlur = isHovered ? 20 : 10;
             cCtx.shadowColor = '#0A84FF';
@@ -701,22 +734,19 @@ function animateConstellation() {
         cluster.nodes.forEach(n => {
             n.x += n.vx;
             n.y += n.vy;
-            
             const targetX = cluster.cx + n.basex;
             const targetY = cluster.cy + n.basey;
-            
-            if(Math.hypot(n.x - targetX, n.y - targetY) > 20) {
+            if (Math.hypot(n.x - targetX, n.y - targetY) > 20) {
                 n.vx *= -1;
                 n.vy *= -1;
             }
-
             cCtx.beginPath();
-            cCtx.arc(n.x, n.y, isHovered ? 8 : 5, 0, Math.PI*2);
+            cCtx.arc(n.x, n.y, isMobile ? 4 : (isHovered ? 8 : 5), 0, Math.PI * 2);
             cCtx.fillStyle = '#fff';
-            cCtx.shadowBlur = isHovered ? 30 : 20;
+            cCtx.shadowBlur = isMobile ? 15 : (isHovered ? 30 : 20);
             cCtx.shadowColor = '#0A84FF';
             cCtx.fill();
-            cCtx.shadowBlur = 0; 
+            cCtx.shadowBlur = 0;
         });
     });
     
